@@ -1,0 +1,7 @@
+node_modules/ 
+.env 
+.DS_Store 
+/client/build 
+/client/dist 
+/mobile/.dart_tool/ 
+/mobile/build/ 
