@@ -1,6 +1,6 @@
 const Ticket = require('../models/Ticket');
+const sendAlertEmail = require('../utils/emailService');
 
-// Simple NLP Rules for Auto-Categorization & Severity
 const classifyTicket = (text) => {
   const content = text.toLowerCase();
 
@@ -33,8 +33,10 @@ exports.createTicket = async (req, res) => {
     const fullText = `${title} ${description}`;
     const { category, severity } = classifyTicket(fullText);
 
+    // Passed both user and reportedBy to fulfill model requirements
     const ticket = await Ticket.create({
       user: req.user._id,
+      reportedBy: req.user._id,
       title,
       description,
       location,
@@ -48,6 +50,10 @@ exports.createTicket = async (req, res) => {
       io.emit('ticket_created', ticket);
     }
 
+    if (severity === 'CRITICAL' || severity === 'HIGH') {
+      sendAlertEmail(ticket).catch((err) => console.log('Email background log:', err.message));
+    }
+
     res.status(201).json(ticket);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -55,10 +61,12 @@ exports.createTicket = async (req, res) => {
 };
 
 // @desc Get All Tickets
-// @route GET /api/tickets
 exports.getTickets = async (req, res) => {
   try {
-    const tickets = await Ticket.find().populate('user', 'name email').sort({ createdAt: -1 });
+    const tickets = await Ticket.find()
+      .populate('user', 'name email')
+      .populate('reportedBy', 'name email')
+      .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -66,7 +74,6 @@ exports.getTickets = async (req, res) => {
 };
 
 // @desc Update Ticket Status
-// @route PUT /api/tickets/:id
 exports.updateTicketStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -91,7 +98,6 @@ exports.updateTicketStatus = async (req, res) => {
 };
 
 // @desc AI Campus Assistant Chatbot Endpoint
-// @route POST /api/tickets/chat
 exports.askAIChatbot = async (req, res) => {
   try {
     const { message } = req.body;
