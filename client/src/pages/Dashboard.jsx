@@ -2,8 +2,10 @@ import React, { useEffect, useState, useContext } from 'react';
 import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
 const socket = io('http://localhost:5000');
+const COLORS = ['#F43F5E', '#F59E0B', '#10B981', '#3B82F6'];
 
 const Dashboard = () => {
   const [tickets, setTickets] = useState([]);
@@ -12,7 +14,6 @@ const Dashboard = () => {
   useEffect(() => {
     fetchTickets();
 
-    // Listen to real-time events from Express Socket.io backend
     socket.on('ticket_created', (newTicket) => {
       setTickets((prev) => [newTicket, ...prev]);
     });
@@ -44,19 +45,39 @@ const Dashboard = () => {
     }
   };
 
+  const severityData = [
+    { name: 'Critical', value: tickets.filter((t) => t.severity === 'CRITICAL').length },
+    { name: 'High', value: tickets.filter((t) => t.severity === 'HIGH').length },
+    { name: 'Medium', value: tickets.filter((t) => t.severity === 'MEDIUM').length },
+    { name: 'Low', value: tickets.filter((t) => t.severity === 'LOW').length },
+  ];
+
+  const exportCSV = () => {
+    const headers = ['Title', 'Category', 'Severity', 'Status', 'CreatedAt\n'];
+    const rows = tickets.map((t) => `"${t.title}","${t.category}","${t.severity}","${t.status}","${t.createdAt}"\n`);
+    const blob = new Blob([headers.join(','), ...rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CampusFlow_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Admin Operations Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Welcome back, {user?.name || 'Admin'}</p>
+          <p className="text-slate-400 text-sm mt-1">Welcome back, {user?.name || 'Janith VC'}</p>
         </div>
-        <button 
-          onClick={logout} 
-          className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2 rounded-lg transition"
-        >
-          Sign Out
-        </button>
+        <div className="flex gap-3">
+          <button onClick={exportCSV} className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+            Export CSV Report
+          </button>
+          <button onClick={logout} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2 rounded-lg transition">
+            Sign Out
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -66,15 +87,39 @@ const Dashboard = () => {
         </div>
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
           <p className="text-slate-400 text-sm">Open Tickets</p>
-          <p className="text-4xl font-extrabold text-amber-400 mt-2">
-            {tickets.filter((t) => t.status === 'OPEN').length}
-          </p>
+          <p className="text-4xl font-extrabold text-amber-400 mt-2">{tickets.filter((t) => t.status === 'OPEN').length}</p>
         </div>
         <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
           <p className="text-slate-400 text-sm">Critical Severity</p>
-          <p className="text-4xl font-extrabold text-rose-500 mt-2">
-            {tickets.filter((t) => t.severity === 'CRITICAL').length}
-          </p>
+          <p className="text-4xl font-extrabold text-rose-500 mt-2">{tickets.filter((t) => t.severity === 'CRITICAL').length}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-72">
+          <h3 className="text-lg font-semibold mb-4 text-slate-200">Incident Severity Distribution</h3>
+          <ResponsiveContainer width="100%" height="80%">
+            <PieChart>
+              <Pie data={severityData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
+                {severityData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-72">
+          <h3 className="text-lg font-semibold mb-4 text-slate-200">Incident Volume Analytics</h3>
+          <ResponsiveContainer width="100%" height="80%">
+            <BarChart data={severityData}>
+              <XAxis dataKey="name" stroke="#94A3B8" />
+              <YAxis stroke="#94A3B8" />
+              <Tooltip />
+              <Bar dataKey="value" fill="#3B82F6" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -118,10 +163,7 @@ const Dashboard = () => {
                   </td>
                   <td className="p-4">
                     {t.status !== 'RESOLVED' && (
-                      <button 
-                        onClick={() => updateStatus(t._id, 'RESOLVED')} 
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded transition"
-                      >
+                      <button onClick={() => updateStatus(t._id, 'RESOLVED')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded transition">
                         Mark Resolved
                       </button>
                     )}

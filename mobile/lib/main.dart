@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   runApp(const CampusFlowApp());
@@ -39,8 +41,12 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   bool _isSubmitting = false;
-  late IO.Socket socket;
+  XFile? _capturedImage;
+  String _locationStatus = 'Tap to fetch live GPS location';
+  double? _latitude;
+  double? _longitude;
 
+  late IO.Socket socket;
   final String baseUrl = 'http://localhost:5000';
 
   @override
@@ -55,6 +61,46 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
       'autoConnect': false,
     });
     socket.connect();
+  }
+
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() {
+        _capturedImage = image;
+      });
+    }
+  }
+
+  Future<void> _getGPSLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() => _locationStatus = 'Location services disabled');
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() => _locationStatus = 'Location permissions denied');
+        return;
+      }
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+
+    setState(() {
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+      _locationStatus = '📍 GPS: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+    });
   }
 
   Future<void> _submitReport() async {
@@ -89,10 +135,11 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
           'title': _titleController.text,
           'description': _descController.text,
           'location': {
-            'building': 'Block 3 - Computer Lab',
-            'latitude': 13.1691,
-            'longitude': 77.5352,
+            'building': 'Main Campus',
+            'latitude': _latitude ?? 13.1691,
+            'longitude': _longitude ?? 77.5352,
           },
+          'imageUrl': _capturedImage != null ? _capturedImage!.path : '',
         }),
       );
 
@@ -106,6 +153,10 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
         );
         _titleController.clear();
         _descController.clear();
+        setState(() {
+          _capturedImage = null;
+          _locationStatus = 'Tap to fetch live GPS location';
+        });
       }
     } catch (e) {
       if (!mounted) return;
@@ -139,7 +190,39 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
               'Issues are automatically classified & prioritized using AI NLP.',
               style: TextStyle(color: Colors.grey, fontSize: 13),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 100,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                ),
+                child: _capturedImage == null
+                    ? const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.camera_alt, color: Colors.blueAccent, size: 32),
+                          SizedBox(height: 6),
+                          Text('Tap to Capture Photo Evidence', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                          const SizedBox(width: 8),
+                          Text('Photo Attached: ${_capturedImage!.name}', style: const TextStyle(fontSize: 12)),
+                        ],
+                      ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
@@ -147,45 +230,46 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
                 hintText: 'e.g. Exposed wiring near library entrance',
                 filled: true,
                 fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
             const SizedBox(height: 16),
+
             TextField(
               controller: _descController,
-              maxLines: 4,
+              maxLines: 3,
               decoration: InputDecoration(
                 labelText: 'Description',
                 hintText: 'Provide details on the issue...',
                 filled: true,
                 fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.amber),
-                  SizedBox(width: 10),
-                  Text(
-                    'Location Tagged: Block 3 (GPS Attached)',
-                    style: TextStyle(fontSize: 13),
-                  ),
-                ],
+
+            InkWell(
+              onTap: _getGPSLocation,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.my_location, color: Colors.amber),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(_locationStatus, style: const TextStyle(fontSize: 13)),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 24),
+
             SizedBox(
               width: double.infinity,
               height: 50,
@@ -193,9 +277,7 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
                 onPressed: _isSubmitting ? null : _submitReport,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
