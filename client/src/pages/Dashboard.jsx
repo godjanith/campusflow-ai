@@ -7,7 +7,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import AuroraBackground from '../components/AuroraBackground';
 
-const socket = io('http://localhost:5000');
+const socket = io('https://campusflow-api-qwfv.onrender.com');
 const COLORS = ['#F43F5E', '#F59E0B', '#10B981', '#3B82F6'];
 
 // Custom Leaflet Pin Marker Icon

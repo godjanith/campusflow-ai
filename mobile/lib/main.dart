@@ -47,7 +47,7 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
   double? _longitude;
 
   late IO.Socket socket;
-  final String baseUrl = 'http://localhost:5000';
+final String baseUrl = 'https://campusflow-api-qwfv.onrender.com';
 
   @override
   void initState() {
