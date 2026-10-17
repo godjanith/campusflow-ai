@@ -3,13 +3,27 @@ import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import AuroraBackground from '../components/AuroraBackground';
 
 const socket = io('http://localhost:5000');
 const COLORS = ['#F43F5E', '#F59E0B', '#10B981', '#3B82F6'];
 
+// Custom Leaflet Pin Marker Icon
+const createCustomIcon = (severity) => {
+  const color = severity === 'CRITICAL' ? '#F43F5E' : severity === 'HIGH' ? '#F59E0B' : '#3B82F6';
+  return L.divIcon({
+    className: 'custom-map-pin',
+    html: `<div style="background-color: ${color}; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px ${color};"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+};
+
 const Dashboard = () => {
   const [tickets, setTickets] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
   const { logout, user } = useContext(AuthContext);
 
   useEffect(() => {
@@ -17,10 +31,12 @@ const Dashboard = () => {
 
     socket.on('ticket_created', (newTicket) => {
       setTickets((prev) => [newTicket, ...prev]);
+      addAuditLog(`New ${newTicket.severity} incident reported: "${newTicket.title}"`);
     });
 
     socket.on('ticket_updated', (updatedTicket) => {
       setTickets((prev) => prev.map((t) => (t._id === updatedTicket._id ? updatedTicket : t)));
+      addAuditLog(`Ticket "${updatedTicket.title}" status updated to ${updatedTicket.status}`);
     });
 
     return () => {
@@ -29,10 +45,16 @@ const Dashboard = () => {
     };
   }, []);
 
+  const addAuditLog = (message) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setAuditLogs((prev) => [{ id: Date.now(), message, timestamp }, ...prev.slice(0, 9)]);
+  };
+
   const fetchTickets = async () => {
     try {
       const { data } = await API.get('/tickets');
       setTickets(data);
+      addAuditLog(`Fetched ${data.length} active tickets from MongoDB Atlas`);
     } catch (err) {
       console.error(err);
     }
@@ -64,11 +86,14 @@ const Dashboard = () => {
     a.click();
   };
 
+  // Center campus map around Bengaluru coordinates
+  const mapCenter = [13.1691, 77.5352];
+
   return (
     <div className="relative min-h-screen text-slate-100 p-8">
       <AuroraBackground />
 
-      {/* Header Bar with Emergency Contact Details */}
+      {/* Header Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Admin Operations Dashboard</h1>
@@ -77,7 +102,6 @@ const Dashboard = () => {
           </p>
         </div>
 
-        {/* Contact Support Card */}
         <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-lg px-4 py-2 text-xs text-slate-300">
           <p className="font-semibold text-blue-400 mb-0.5">📱 Campus Support Hotline</p>
           <p>Phone: <span className="text-white font-medium">+91 8971958186</span></p>
@@ -117,6 +141,54 @@ const Dashboard = () => {
           <p className="text-4xl font-extrabold text-rose-500 mt-2">
             {tickets.filter((t) => t.severity === 'CRITICAL').length}
           </p>
+        </div>
+      </div>
+
+      {/* Interactive GPS Map & Live Audit Log Stream */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Interactive GPS Map Widget */}
+        <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl shadow-xl h-80">
+          <h3 className="text-lg font-semibold mb-3 text-slate-200">📍 Live Campus Incident GPS Map</h3>
+          <div className="h-60 rounded-lg overflow-hidden border border-slate-700/60">
+            <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {tickets.map((t) => (
+                <Marker 
+                  key={t._id} 
+                  position={[t.location?.latitude || 13.1691, t.location?.longitude || 77.5352]}
+                  icon={createCustomIcon(t.severity)}
+                >
+                  <Popup>
+                    <div className="text-slate-900 text-xs font-sans">
+                      <strong className="block text-sm">{t.title}</strong>
+                      <p className="my-1">{t.category} ({t.severity})</p>
+                      <span className="text-slate-600">Status: {t.status}</span>
+                    </div>
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+          </div>
+        </div>
+
+        {/* Live Ticket Audit Log Stream */}
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl shadow-xl h-80 flex flex-col">
+          <h3 className="text-lg font-semibold mb-3 text-slate-200">⚡ Live Audit Log Stream</h3>
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 font-mono text-xs">
+            {auditLogs.length === 0 ? (
+              <p className="text-slate-500 italic">Listening for live Socket.io events...</p>
+            ) : (
+              auditLogs.map((log) => (
+                <div key={log.id} className="bg-slate-800/60 border border-slate-700/50 p-2.5 rounded-lg flex justify-between items-start">
+                  <span className="text-slate-300 leading-relaxed">{log.message}</span>
+                  <span className="text-blue-400 font-semibold ml-2 whitespace-nowrap">{log.timestamp}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
