@@ -30,7 +30,6 @@ exports.createTicket = async (req, res) => {
   try {
     const { title, description, location, imageUrl } = req.body;
 
-    // AI Classification
     const fullText = `${title} ${description}`;
     const { category, severity } = classifyTicket(fullText);
 
@@ -44,7 +43,6 @@ exports.createTicket = async (req, res) => {
       severity,
     });
 
-    // Emit Socket.io Real-Time Event
     const io = req.app.get('io');
     if (io) {
       io.emit('ticket_created', ticket);
@@ -81,7 +79,6 @@ exports.updateTicketStatus = async (req, res) => {
     ticket.status = status || ticket.status;
     const updatedTicket = await ticket.save();
 
-    // Emit Socket.io Real-Time Event
     const io = req.app.get('io');
     if (io) {
       io.emit('ticket_updated', updatedTicket);
@@ -99,16 +96,16 @@ exports.askAIChatbot = async (req, res) => {
   try {
     const { message } = req.body;
     const text = (message || '').toLowerCase();
-    let reply = "I'm the CampusFlow AI Assistant. I can help you with campus FAQs, issue tracking, and emergency contacts.";
+    let reply = "I'm the CampusFlow AI Assistant. You can ask me about issue status, campus FAQs, or emergency support contacts.";
 
     if (text.includes('status') || text.includes('ticket') || text.includes('my report')) {
-      reply = "You can view the real-time status of all your reported issues directly on the Admin & Student operations dashboard. Admins update ticket statuses live!";
-    } else if (text.includes('emergency') || text.includes('fire') || text.includes('medical') || text.includes('help')) {
-      reply = "⚠️ For immediate emergencies, please contact Campus Security at +91-80-2309-1200 or visit the Health Center in Block 1.";
+      reply = "You can view the real-time status of all reported issues on the Admin & Operations dashboard. Admins update ticket statuses live!";
+    } else if (text.includes('emergency') || text.includes('fire') || text.includes('medical') || text.includes('help') || text.includes('contact') || text.includes('support') || text.includes('call') || text.includes('mail') || text.includes('email')) {
+      reply = "📞 **Campus Security & Support Contact**:\n• Phone / Emergency: **+91 8971958186**\n• Official Email: **JANITH.20252MCA0318@presidencyuniversity.in**";
     } else if (text.includes('wifi') || text.includes('internet') || text.includes('network')) {
-      reply = "Wi-Fi issues are automatically routed to the IT Infrastructure team with LOW/MEDIUM severity. Please provide your Block & Lab number when reporting.";
+      reply = "Wi-Fi issues are automatically routed to the IT team. Include your Block & Lab number when submitting the report!";
     } else if (text.includes('location') || text.includes('gps')) {
-      reply = "CampusFlow AI automatically attaches your live GPS coordinates when you tap 'Fetch live GPS location' before submitting a report.";
+      reply = "CampusFlow AI automatically attaches your live GPS coordinates when you tap 'Fetch live GPS location' in the mobile app.";
     }
 
     res.json({ reply });

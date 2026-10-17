@@ -66,15 +66,24 @@ const Dashboard = () => {
 
   return (
     <div className="relative min-h-screen text-slate-100 p-8">
-      {/* Background Effect */}
       <AuroraBackground />
 
-      {/* Header Bar */}
-      <div className="flex justify-between items-center mb-8">
+      {/* Header Bar with Emergency Contact Details */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold">Admin Operations Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Welcome back, {user?.name || 'Janith VC'}</p>
+          <p className="text-slate-400 text-sm mt-1">
+            Welcome back, <span className="text-blue-400 font-semibold">{user?.name || 'Janith VC'}</span>
+          </p>
         </div>
+
+        {/* Contact Support Card */}
+        <div className="bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-lg px-4 py-2 text-xs text-slate-300">
+          <p className="font-semibold text-blue-400 mb-0.5">📱 Campus Support Hotline</p>
+          <p>Phone: <span className="text-white font-medium">+91 8971958186</span></p>
+          <p>Email: <span className="text-white font-medium">JANITH.20252MCA0318@presidencyuniversity.in</span></p>
+        </div>
+
         <div className="flex gap-3">
           <button 
             onClick={exportCSV} 
