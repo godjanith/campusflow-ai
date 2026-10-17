@@ -3,6 +3,7 @@ import API from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
+import AuroraBackground from '../components/AuroraBackground';
 
 const socket = io('http://localhost:5000');
 const COLORS = ['#F43F5E', '#F59E0B', '#10B981', '#3B82F6'];
@@ -64,39 +65,55 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
+    <div className="relative min-h-screen text-slate-100 p-8">
+      {/* Background Effect */}
+      <AuroraBackground />
+
+      {/* Header Bar */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Admin Operations Dashboard</h1>
           <p className="text-slate-400 text-sm mt-1">Welcome back, {user?.name || 'Janith VC'}</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={exportCSV} className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+          <button 
+            onClick={exportCSV} 
+            className="bg-blue-600/80 hover:bg-blue-500 backdrop-blur-md border border-blue-400/30 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
+          >
             Export CSV Report
           </button>
-          <button onClick={logout} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2 rounded-lg transition">
+          <button 
+            onClick={logout} 
+            className="bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur-md border border-slate-700 text-slate-300 text-sm font-semibold px-4 py-2 rounded-lg transition"
+          >
             Sign Out
           </button>
         </div>
       </div>
 
+      {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl shadow-lg">
           <p className="text-slate-400 text-sm">Total Incidents</p>
           <p className="text-4xl font-extrabold text-blue-400 mt-2">{tickets.length}</p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl shadow-lg">
           <p className="text-slate-400 text-sm">Open Tickets</p>
-          <p className="text-4xl font-extrabold text-amber-400 mt-2">{tickets.filter((t) => t.status === 'OPEN').length}</p>
+          <p className="text-4xl font-extrabold text-amber-400 mt-2">
+            {tickets.filter((t) => t.status === 'OPEN').length}
+          </p>
         </div>
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl shadow-lg">
           <p className="text-slate-400 text-sm">Critical Severity</p>
-          <p className="text-4xl font-extrabold text-rose-500 mt-2">{tickets.filter((t) => t.severity === 'CRITICAL').length}</p>
+          <p className="text-4xl font-extrabold text-rose-500 mt-2">
+            {tickets.filter((t) => t.severity === 'CRITICAL').length}
+          </p>
         </div>
       </div>
 
+      {/* Analytics Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-72">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl h-72 shadow-lg">
           <h3 className="text-lg font-semibold mb-4 text-slate-200">Incident Severity Distribution</h3>
           <ResponsiveContainer width="100%" height="80%">
             <PieChart>
@@ -110,7 +127,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-72">
+        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 p-6 rounded-xl h-72 shadow-lg">
           <h3 className="text-lg font-semibold mb-4 text-slate-200">Incident Volume Analytics</h3>
           <ResponsiveContainer width="100%" height="80%">
             <BarChart data={severityData}>
@@ -123,9 +140,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+      {/* Incident Data Table */}
+      <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
         <table className="w-full text-left">
-          <thead className="bg-slate-800 text-slate-400 text-xs uppercase">
+          <thead className="bg-slate-800/80 text-slate-400 text-xs uppercase">
             <tr>
               <th className="p-4">Title</th>
               <th className="p-4">AI Category</th>
@@ -143,13 +161,14 @@ const Dashboard = () => {
               </tr>
             ) : (
               tickets.map((t) => (
-                <tr key={t._id} className="hover:bg-slate-800/50 transition">
+                <tr key={t._id} className="hover:bg-slate-800/40 transition">
                   <td className="p-4 font-semibold">{t.title}</td>
                   <td className="p-4">{t.category}</td>
                   <td className="p-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                      t.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400' :
-                      t.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'
+                      t.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                      t.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 
+                      'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                     }`}>
                       {t.severity}
                     </span>
@@ -163,7 +182,10 @@ const Dashboard = () => {
                   </td>
                   <td className="p-4">
                     {t.status !== 'RESOLVED' && (
-                      <button onClick={() => updateStatus(t._id, 'RESOLVED')} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded transition">
+                      <button 
+                        onClick={() => updateStatus(t._id, 'RESOLVED')} 
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded transition shadow-md"
+                      >
                         Mark Resolved
                       </button>
                     )}
