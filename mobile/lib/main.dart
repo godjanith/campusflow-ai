@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart0:convert';
+import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -195,14 +195,14 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
                 height: 420,
                 child: Column(
                   children: [
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Icon(Icons.smart_toy, color: Colors.blueAccent),
                         SizedBox(width: 10),
                         Text('CampusFlow AI Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    const Divider(color: Colors.slate700),
+                    const Divider(color: Colors.grey),
                     Expanded(
                       child: ListView.builder(
                         itemCount: chatHistory.length,
