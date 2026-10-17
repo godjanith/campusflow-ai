@@ -80,3 +80,27 @@ exports.updateTicketStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc AI Campus Assistant Chatbot Endpoint
+// @route POST /api/tickets/chat
+exports.askAIChatbot = async (req, res) => {
+  try {
+    const { message } = req.body;
+    const text = message.toLowerCase();
+    let reply = "I'm the CampusFlow AI Assistant. I can help you with campus FAQs, issue tracking, and emergency contacts.";
+
+    if (text.includes('status') || text.includes('ticket') || text.includes('my report')) {
+      reply = "You can view the real-time status of all your reported issues directly on the 'My Tickets' dashboard. Admins update ticket statuses live!";
+    } else if (text.includes('emergency') || text.includes('fire') || text.includes('medical') || text.includes('help')) {
+      reply = "⚠️ For immediate emergencies, please contact Campus Security at +91-80-2309-1200 or visit the Health Center in Block 1.";
+    } else if (text.includes('wifi') || text.includes('internet') || text.includes('network')) {
+      reply = "Wi-Fi issues are automatically routed to the IT Infrastructure team with LOW severity. Please provide your Block & Lab number when reporting.";
+    } else if (text.includes('location') || text.includes('gps')) {
+      reply = "CampusFlow AI automatically attaches your live GPS coordinates when you tap 'Fetch live GPS location' before submitting a report.";
+    }
+
+    res.json({ reply });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

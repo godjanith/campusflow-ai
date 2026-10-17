@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'dart0:convert';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -168,6 +168,124 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
     }
   }
 
+  void _openAIChatbot() {
+    final chatMsgController = TextEditingController();
+    List<Map<String, String>> chatHistory = [
+      {'sender': 'ai', 'text': 'Hello Janith! 👋 How can CampusFlow AI assist you today?'}
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: 20,
+                left: 16,
+                right: 16,
+              ),
+              child: SizedBox(
+                height: 420,
+                child: Column(
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.smart_toy, color: Colors.blueAccent),
+                        SizedBox(width: 10),
+                        Text('CampusFlow AI Assistant', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const Divider(color: Colors.slate700),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: chatHistory.length,
+                        itemBuilder: (context, i) {
+                          final isUser = chatHistory[i]['sender'] == 'user';
+                          return Align(
+                            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 4),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isUser ? Colors.blueAccent : const Color(0xFF1E293B),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(chatHistory[i]['text'] ?? '', style: const TextStyle(fontSize: 13)),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: chatMsgController,
+                            decoration: const InputDecoration(
+                              hintText: 'Ask AI assistant...',
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.send, color: Colors.blueAccent),
+                          onPressed: () async {
+                            if (chatMsgController.text.isEmpty) return;
+                            final userText = chatMsgController.text;
+                            setModalState(() {
+                              chatHistory.add({'sender': 'user', 'text': userText});
+                            });
+                            chatMsgController.clear();
+
+                            try {
+                              final authRes = await http.post(
+                                Uri.parse('$baseUrl/api/auth/login'),
+                                headers: {'Content-Type': 'application/json'},
+                                body: jsonEncode({
+                                  'email': 'admin@presidencyuniversity.in',
+                                  'password': 'adminpassword123',
+                                }),
+                              );
+                              final token = jsonDecode(authRes.body)['token'];
+
+                              final res = await http.post(
+                                Uri.parse('$baseUrl/api/tickets/chat'),
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': 'Bearer $token',
+                                },
+                                body: jsonEncode({'message': userText}),
+                              );
+                              final reply = jsonDecode(res.body)['reply'];
+                              setModalState(() {
+                                chatHistory.add({'sender': 'ai', 'text': reply});
+                              });
+                            } catch (e) {
+                              setModalState(() {
+                                chatHistory.add({'sender': 'ai', 'text': 'Unable to reach AI service right now.'});
+                              });
+                            }
+                          },
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -175,6 +293,11 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
         title: const Text('CampusFlow AI Mobile'),
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openAIChatbot,
+        backgroundColor: Colors.blueAccent,
+        child: const Icon(Icons.smart_toy, color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
