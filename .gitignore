@@ -5,3 +5,4 @@ node_modules/
 /client/dist 
 /mobile/.dart_tool/ 
 /mobile/build/ 
+.vercel

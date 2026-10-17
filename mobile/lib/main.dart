@@ -47,7 +47,7 @@ class _IssueReportScreenState extends State<IssueReportScreen> {
   double? _longitude;
 
   late IO.Socket socket;
-final String baseUrl = 'https://campusflow-api-qwfv.onrender.com';
+  final String baseUrl = 'https://campusflow-api-qwfv.onrender.com';
 
   @override
   void initState() {
@@ -119,13 +119,13 @@ final String baseUrl = 'https://campusflow-api-qwfv.onrender.com';
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.emerald.withOpacity(0.2),
+                    color: Colors.green.withOpacity(0.2),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.emerald, width: 2),
+                    border: Border.all(color: Colors.green, width: 2),
                   ),
                   child: const Icon(
                     Icons.check_circle_rounded,
-                    color: Colors.emeraldAccent,
+                    color: Colors.greenAccent,
                     size: 48,
                   ),
                 ),
@@ -146,20 +146,19 @@ final String baseUrl = 'https://campusflow-api-qwfv.onrender.com';
                 ),
                 const SizedBox(height: 20),
 
-                // AI Categorization Pill Card
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.slate700),
+                    border: Border.all(color: Colors.grey.shade700),
                   ),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('AI Category:', style: TextStyle(fontSize: 12, color: Colors.slate400)),
+                          const Text('AI Category:', style: TextStyle(fontSize: 12, color: Colors.grey)),
                           Text(
                             category.isEmpty ? 'Auto-Detected' : category,
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueAccent),
@@ -170,13 +169,13 @@ final String baseUrl = 'https://campusflow-api-qwfv.onrender.com';
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Priority Severity:', style: TextStyle(fontSize: 12, color: Colors.slate400)),
+                          const Text('Priority Severity:', style: TextStyle(fontSize: 12, color: Colors.grey)),
                           Text(
                             severity.isEmpty ? 'CRITICAL' : severity,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: severity == 'CRITICAL' ? Colors.roseAccent : Colors.amberAccent,
+                              color: severity == 'CRITICAL' ? Colors.redAccent : Colors.amberAccent,
                             ),
                           ),
                         ],

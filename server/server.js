@@ -11,7 +11,7 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// Enable CORS for all local web & mobile clients
+// Enable CORS for all production clients
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -28,11 +28,12 @@ const io = new Server(server, {
   }
 });
 
+app.get('/', (req, res) => {
+  res.send('🚀 CampusFlow AI Express API is live and operational!');
+});
+
 io.on('connection', (socket) => {
   console.log(`⚡ Client connected: ${socket.id}`);
-  socket.on('disconnect', () => {
-    console.log(`🔥 Client disconnected: ${socket.id}`);
-  });
 });
 
 app.set('io', io);
@@ -44,8 +45,4 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-});
-
-app.get('/', (req, res) => {
-  res.send('🚀 CampusFlow AI Express API is live and operational!');
 });
